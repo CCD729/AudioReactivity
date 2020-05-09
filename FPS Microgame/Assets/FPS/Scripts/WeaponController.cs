@@ -318,7 +318,7 @@ public class WeaponController : MonoBehaviour
         // play shoot SFX
         if (shootSFX)
         {
-            m_ShootAudioSource.PlayOneShot(shootSFX);
+            m_ShootAudioSource.PlayOneShot(shootSFX,0.5f);
         }
 
         // Trigger attack animation if there is any
