@@ -110,6 +110,10 @@ public class WeaponController : MonoBehaviour
 
     const string k_AnimAttackParameter = "Attack";
 
+    public float[] aveMag;
+    public float avgBin;
+
+
     void Awake()
     {
         m_CurrentAmmo = maxAmmo;
@@ -121,6 +125,38 @@ public class WeaponController : MonoBehaviour
 
     void Update()
     {
+        // FFT ANALYSIS
+        // Analyze sample data.
+        
+        int numPartitions = 16;
+        aveMag = new float[numPartitions];
+        float partitionIndx = 0;
+        int numDisplayedBins = 512 / 2; //NOTE: we only display half the spectral data because the max displayable frequency is Nyquist (at half the num of bins)
+
+        for (int i = 0; i < numDisplayedBins; i++)
+        {
+            if (i < numDisplayedBins * (partitionIndx + 1) / numPartitions)
+            {
+                aveMag[(int)partitionIndx] += FFT_Handler.spectrumData[i] / (512 / numPartitions);
+            }
+            else
+            {
+                partitionIndx++;
+                i--;
+            }
+        }
+
+        // scale and bound the average magnitude.
+        for (int i = 0; i < numPartitions; i++)
+        {
+            aveMag[i] = (float)0.5 + aveMag[i] * 100;
+            if (aveMag[i] > 100)
+            {
+                aveMag[i] = 100;
+            }
+        }
+        avgBin = (aveMag[1] + aveMag[3] + aveMag[5] + aveMag[7] + aveMag[9]) / 5;
+
         UpdateAmmo();
 
         UpdateCharge();
@@ -217,14 +253,15 @@ public class WeaponController : MonoBehaviour
         switch (shootType)
         {
             case WeaponShootType.Manual:
-                if (inputDown)
+                if (aveMag[1] > 2.2f)
                 {
                     return TryShoot();
                 }
                 return false;
 
             case WeaponShootType.Automatic:
-                if (inputHeld)
+                //if (inputHeld)
+                if (aveMag[1]>1.7f)
                 {
                     return TryShoot();
                 }
@@ -318,7 +355,7 @@ public class WeaponController : MonoBehaviour
         // play shoot SFX
         if (shootSFX)
         {
-            m_ShootAudioSource.PlayOneShot(shootSFX,0.5f);
+            m_ShootAudioSource.PlayOneShot(shootSFX,0.3f);
         }
 
         // Trigger attack animation if there is any
